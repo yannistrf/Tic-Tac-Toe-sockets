@@ -22,6 +22,10 @@ class Server:
             print("[PORT IS USED FROM ANOTHER SERVICE]")
             print("[EXITING...]")
             exit(-1)
+        except OverflowError:
+            print("[PORT MUST BE 0-65535]")
+            print("[EXITING...]")
+            exit(-1)
 
         self.acceptSock.listen(2)
         print("[SERVER SETUP COMPLETE]")
