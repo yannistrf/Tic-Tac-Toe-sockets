@@ -41,7 +41,17 @@ class Client:
             # My turn
             if code == util.PLAY:
                 # Get play from user
-                move = util.getMove()
+                while True:
+                    move = util.getMove()
+                    if move[0] > 2 or move[1] > 2 or move[0] < 0 or move[1] < 0:
+                        print("[PICK A VALID POSITION]")
+                        continue
+                    if self.table[move[0]][move[1]] != 0:
+                        print("[POSITION TAKEN]")
+                        continue
+                    # Legal move, exit loop
+                    break
+
                 # Update the game state
                 self.table[move[0]][move[1]] = self.symbol
                 # Send to the server the play

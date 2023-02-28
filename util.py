@@ -71,8 +71,14 @@ def getIP_PORT():
     return ip, port
 
 def getMove():
-    row = int(input("Enter row: ")) - 1
-    col = int(input("Enter column: ")) - 1
+    # Make sure the user gives us an integer
+    while True:
+        try:
+            row = int(input("Enter row: ")) - 1
+            col = int(input("Enter column: ")) - 1
+            break
+        except ValueError:
+            print("[PLEASE ENTER A NUMBER]")
     return row, col
 
 # Message size
