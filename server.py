@@ -1,5 +1,6 @@
 import socket
 import util
+import signal
 
 
 class Server:
@@ -10,8 +11,6 @@ class Server:
              1 -> O
             -1 -> X
         """
-        self.table = [[0,0,0], [0,0,0], [0,0,0]]
-
         self.port = int(input("ENTER THE PORT YOU WANT TO RUN THE GAME ON: "))
         self.acceptSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -28,7 +27,13 @@ class Server:
             exit(-1)
 
         self.acceptSock.listen(2)
+
+        # Setup our signal handling function
+        signal.signal(signal.SIGINT, lambda signum, frame: self.shutdown())
+
         print("[SERVER SETUP COMPLETE]")
+        print("[PRESS CTRL+C TO SHUTDOWN]")
+
 
     def acceptConnections(self):
         print("[WAITING FOR PLAYERS TO CONNECT]")
@@ -44,60 +49,66 @@ class Server:
         util.sendCode(self.sockP1, util.GAME_BEGINS)
         util.sendCode(self.sockP2, util.GAME_BEGINS)
 
-        self.acceptSock.close()
-
     def run(self):
-        playingSock = self.sockP1
-        waitingSock = self.sockP2
-        symbol = 1
-
         while True:
-            # Check if the game has ended
-            status = util.check_status(self.table)
-            if status == 1:
-                util.sendCode(self.sockP1, util.WON)
-                util.sendCode(self.sockP2, util.LOST)
-                print("[PLAYER 1 WON]")
-                break
-            elif status == -1:
-                util.sendCode(self.sockP1, util.LOST)
-                util.sendCode(self.sockP2, util.WON)
-                print("[PLAYER 2 WON]")
-                break
-            elif status == 2:
-                util.sendCode(self.sockP1, util.TIE)
-                util.sendCode(self.sockP2, util.TIE)
-                print("[TIE]")
-                break
+            self.acceptConnections()
+            playingSock = self.sockP1
+            waitingSock = self.sockP2
+            self.table = [[0,0,0], [0,0,0], [0,0,0]]
+            symbol = 1
 
-            # If the game continues
-            util.sendCode(playingSock, util.PLAY)
-            util.sendCode(waitingSock, util.WAIT)
+            while True:
+                # Check if the game has ended
+                status = util.check_status(self.table)
+                if status == 1:
+                    util.sendCode(self.sockP1, util.WON)
+                    util.sendCode(self.sockP2, util.LOST)
+                    print("[PLAYER 1 WON]")
+                    break
+                elif status == -1:
+                    util.sendCode(self.sockP1, util.LOST)
+                    util.sendCode(self.sockP2, util.WON)
+                    print("[PLAYER 2 WON]")
+                    break
+                elif status == 2:
+                    util.sendCode(self.sockP1, util.TIE)
+                    util.sendCode(self.sockP2, util.TIE)
+                    print("[TIE]")
+                    break
+
+                # If the game continues
+                util.sendCode(playingSock, util.PLAY)
+                util.sendCode(waitingSock, util.WAIT)
+                
+                move = util.recvMove(playingSock)
+                self.table[move[0]][move[1]] = symbol
+
+                util.sendMove(waitingSock, move)
+
+                # Log the plays of each player
+                if symbol == 1:
+                    print(f"[PLAYER 1 -> {(move[0]+1, move[1]+1)}]")
+                else:
+                    print(f"[PLAYER 2 -> {(move[0]+1, move[1]+1)}]")	
             
-            move = util.recvMove(playingSock)
-            self.table[move[0]][move[1]] = symbol
+                # Swap the roles of the clients
+                temp = waitingSock
+                waitingSock = playingSock
+                playingSock = temp
+                symbol = symbol * (-1)
 
-            util.sendMove(waitingSock, move)
-
-            # Log the plays of each player
-            if symbol == 1:
-                print(f"[PLAYER 1 -> {(move[0]+1, move[1]+1)}]")
-            else:
-                print(f"[PLAYER 2 -> {(move[0]+1, move[1]+1)}]")	
-		
-            # Swap the roles of the clients
-            temp = waitingSock
-            waitingSock = playingSock
-            playingSock = temp
-            symbol = symbol * (-1)
+            self.closeSessions()
 
 
-    def shutdown(self):
+    def closeSessions(self):
         self.sockP1.close()
         self.sockP2.close()
+        
+    def shutdown(self):
         self.acceptSock.close()
+        print("\n[SERVER TERMINATED]")
+        exit(0)
+
 
 ser = Server()
-ser.acceptConnections()
 ser.run()
-ser.shutdown()
