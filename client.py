@@ -61,6 +61,9 @@ class Client:
                 print("[OPPONET'S TURN...]")
                 # Get opponent's play
                 move = util.recvMove(self.sock)
+                if not move:
+                    print("[SERVER DISCONNECTED]")
+                    break
                 # Update game state
                 self.table[move[0]][move[1]] = self.symbol * (-1)
             elif code == util.WON:
@@ -72,12 +75,15 @@ class Client:
             elif code == util.TIE:
                 print("IT'S A TIE!")
                 break
-            
+            elif code == util.QUIT:
+                print("[SERVER DISCONNECTED]")
+                break
+
+        self.shutdown()   
 
     def shutdown(self):
         self.sock.close()
         print("[EXITING...]")
 
-c = Client()
-c.run()
-c.shutdown()
+cl = Client()
+cl.run()

@@ -106,6 +106,8 @@ class Server:
         
     def shutdown(self):
         self.acceptSock.close()
+        util.sendCode(self.sockP1, util.QUIT)
+        util.sendCode(self.sockP2, util.QUIT)
         print("\n[SERVER TERMINATED]")
         exit(0)
 

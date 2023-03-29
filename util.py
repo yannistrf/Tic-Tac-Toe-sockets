@@ -91,6 +91,7 @@ WAIT = 202
 WON = 999
 LOST = 666
 TIE = 777
+QUIT = 404
 
 # Used only from the server
 # Sends code to client
@@ -110,7 +111,10 @@ def sendMove(sock, move):
     sock.send(msg.encode())
 
 # Used both from client and server
+# Returns None if the server sends an error code
 def recvMove(sock):
     msg = sock.recv(HEADER).decode()
+    if msg[1].isdigit():
+        return None
     move = (int(msg[0]), int(msg[2]))
     return move
